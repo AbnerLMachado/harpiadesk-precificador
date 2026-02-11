@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Precificador ML - Processamento em Lote</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #000000 0%, #4f4f4f 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header img {
+            height: 60px;
+            width: auto;
+            max-width: 250px;
+            display: block;
+            margin: 0 auto 15px;
+            object-fit: contain;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .panel {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .panel-title {
+            color: #2c3e50;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            color: #2c3e50;
+            font-weight: 500;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ecf0f1;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        textarea {
+            min-height: 200px;
+            resize: vertical;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+
+        .button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .button:active {
+            transform: translateY(0);
+        }
+
+        .button.secondary {
+            background: #ecf0f1;
+            color: #2c3e50;
+        }
+
+        .button.secondary:hover {
+            background: #bdc3c7;
+        }
+
+        .info-box {
+            background: #f0f7ff;
+            border-left: 4px solid #667eea;
+            padding: 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #2c3e50;
+            margin-top: 15px;
+            line-height: 1.5;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        thead {
+            background: #f8f9fa;
+            border-bottom: 2px solid #667eea;
+        }
+
+        th {
+            padding: 12px;
+            text-align: left;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #ecf0f1;
+            color: #555;
+        }
+
+        tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 15px;
+        }
+
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 15px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .stat-item {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        @media (max-width: 900px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Precificador ML - Lote</h1>
+            <p>Cole seus produtos com custo, comissão e frete por linha</p>
+        </div>
+
+        <div class="content">
+            <!-- Painel de Entrada -->
+            <div class="panel">
+                <div class="panel-title">📥 Importar Produtos</div>
+
+                <div class="form-group">
+                    <label for="imposto">Alíquota de Imposto (%)</label>
+                    <input type="number" id="imposto" placeholder="0" value="0" step="0.1" min="0">
+                </div>
+
+                <div class="form-group">
+                    <label for="embalagem">Valor de Embalagem Unitária (R$)</label>
+                    <input type="number" id="embalagem" placeholder="0" value="0" step="0.01" min="0">
+                </div>
+
+                <div class="form-group">
+                    <label for="margem">Margem de Lucro Desejada (%)</label>
+                    <input type="number" id="margem" placeholder="25" value="25" step="0.1" min="0" max="100">
+                </div>
+
+                <div class="form-group">
+                    <label for="tabela">Cole seus produtos (SKU | Custo | Comissão | Frete)</label>
+                    <textarea id="tabela" placeholder="PRODUTO001	10.50	14	5.00&#10;PRODUTO002	15.00	16	0.00&#10;PRODUTO003	8.50	12	3.50"></textarea>
+                </div>
+
+                <div class="info-box">
+                    <strong>ℹ️ Como colar:</strong><br>
+                    1. Copie sua tabela do Excel com 4 colunas:<br>
+                    &nbsp;&nbsp;• SKU (código do produto)<br>
+                    &nbsp;&nbsp;• Custo (valor unitário em R$)<br>
+                    &nbsp;&nbsp;• Comissão ML (percentual, ex: 14 para 14%)<br>
+                    &nbsp;&nbsp;• Frete (valor em R$, use 0 se sem frete)<br>
+                    2. Cole no campo acima<br>
+                    3. Clique em "Processar Produtos"
+                </div>
+
+                <button class="button" onclick="processarProdutos()">Processar Produtos</button>
+                <button class="button secondary" onclick="limparCampos()">Limpar Tudo</button>
+            </div>
+
+            <!-- Painel de Resultados -->
+            <div class="panel">
+                <div class="panel-title">📊 Resultados</div>
+
+                <div id="stats" class="stats hidden">
+                    <div class="stat-item">
+                        <div class="stat-label">Produtos Processados</div>
+                        <div class="stat-value" id="total-produtos">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Preço Médio</div>
+                        <div class="stat-value">R$ <span id="preco-medio">0.00</span></div>
+                    </div>
+                </div>
+
+                <div id="mensagem"></div>
+
+                <div id="resultado-preview" class="hidden">
+                    <div class="info-box">
+                        <strong>✅ Processamento concluído!</strong><br>
+                        Clique em "Baixar Excel" para exportar seus produtos com os preços já calculados.
+                    </div>
+                    <button class="button" onclick="exportarExcel()" style="background: linear-gradient(135deg, #27ae60 0%, #229954 100%); margin-top: 20px;">Baixar Excel com Preços</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabela de Preview -->
+        <div class="panel">
+            <div class="panel-title">📋 Preview dos Dados</div>
+            <div id="table-container" class="table-container hidden">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>SKU</th>
+                            <th>Custo (R$)</th>
+                            <th>Comissão ML (%)</th>
+                            <th>Frete (R$)</th>
+                            <th>Embalagem (R$)</th>
+                            <th>Taxa Fixa (R$)</th>
+                            <th>Imposto (R$)</th>
+                            <th>Preço de Venda (R$)</th>
+                            <th>Total Taxas (R$)</th>
+                            <th>Lucro Líquido (R$)</th>
+                            <th>Margem Real (%)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let produtosProcessados = [];
+
+        // ===== FUNÇÃO DE CÁLCULO COM CENTAVOS CORRIGIDOS =====
+        function calcularTaxaFixaML(preco) {
+            // Regras oficiais de taxa fixa do Mercado Livre (2026)
+            // Até R$12,50: 50% do preço
+            if (preco <= 12.50) {
+                return parseFloat((preco * 0.5).toFixed(2));
+            }
+            // Entre R$12,50 e R$29: R$6,25 fixo
+            if (preco < 29) {
+                return 6.25;
+            }
+            // Entre R$29 e R$50: R$6,50 fixo
+            if (preco < 50) {
+                return 6.50;
+            }
+            // Entre R$50 e R$79: R$6,75 fixo
+            if (preco < 79) {
+                return 6.75;
+            }
+            // Acima de R$79: R$0,00 + frete
+            return 0;
+        }
+
+        function calcularPrecoML(custo, comissaoML, freteUnit, imposto, embalagem, margem) {
+            const impostoDecimal = imposto / 100;
+            const margemDecimal = margem / 100;
+            const comissaoDecimal = comissaoML / 100;
+
+            // ===== CORREÇÃO DE CENTAVOS =====
+            // Corrige custo para exatamente 2 casas decimais
+            const custoCentavosCorrigido = parseFloat(custo.toFixed(2));
+            const freteUnitCorrigido = parseFloat(freteUnit.toFixed(2));
+            const embalagemCorrigida = parseFloat(embalagem.toFixed(2));
+
+            // Base de custo: custo + embalagem + frete
+            const baseCusto = parseFloat((custoCentavosCorrigido + embalagemCorrigida + freteUnitCorrigido).toFixed(2));
+
+            // Soma das alíquotas percentuais (comissão + imposto)
+            const aliquotasPercentuais = comissaoDecimal + impostoDecimal;
+
+            // Chute inicial P = base / (1 - margem - alíquotas)
+            let preco = baseCusto / (1 - margemDecimal - aliquotasPercentuais);
+
+            // Iteração para encontrar preço considerando taxa fixa variável
+            // A taxa fixa varia conforme o preço, então iteramos para convergência
+            for (let i = 0; i < 20; i++) {
+                const taxaFixa = calcularTaxaFixaML(preco);
+                
+                // Cálculo das percentuais sobre o preço
+                const comissaoValorTemp = parseFloat((preco * comissaoDecimal).toFixed(2));
+                const impostoValorTemp = parseFloat((preco * impostoDecimal).toFixed(2));
+                
+                // Preço novo considerando: baseCusto + taxa fixa + (margem % do preço) + (percentuais % do preço)
+                // Reorganizando: Preço = (baseCusto + taxaFixa) / (1 - margem - alíquotas)
+                const precoNovo = parseFloat(((baseCusto + taxaFixa) / (1 - margemDecimal - aliquotasPercentuais)).toFixed(2));
+                const precoNovoFloat = parseFloat(precoNovo);
+
+                if (Math.abs(precoNovoFloat - preco) < 0.01) {
+                    preco = precoNovoFloat;
+                    break;
+                }
+                preco = precoNovoFloat;
+            }
+
+            // Cálculos finais com centavos corrigidos
+            preco = parseFloat(preco.toFixed(2));
+            const taxaFixa = parseFloat(calcularTaxaFixaML(preco).toFixed(2));
+            const comissaoValor = parseFloat((preco * comissaoDecimal).toFixed(2));
+            const impostoValor = parseFloat((preco * impostoDecimal).toFixed(2));
+            const taxasTotal = parseFloat((comissaoValor + taxaFixa + impostoValor).toFixed(2));
+            const lucroLiquido = parseFloat((preco - baseCusto - taxasTotal).toFixed(2));
+            const margemReal = preco > 0 ? parseFloat(((lucroLiquido / preco) * 100).toFixed(2)) : 0;
+
+            return {
+                preco: preco,
+                taxaFixa: taxaFixa,
+                comissaoValor: comissaoValor,
+                impostoValor: impostoValor,
+                taxasTotal: taxasTotal,
+                lucroLiquido: lucroLiquido,
+                margemReal: margemReal
+            };
+        }
+
+        // ===== PROCESSAMENTO DE PRODUTOS =====
+        function processarProdutos() {
+            const tabela = document.getElementById('tabela').value.trim();
+            const margemDigitada = parseFloat(document.getElementById('margem').value) || 0;
+            const imposto = parseFloat(document.getElementById('imposto').value) || 0;
+            const embalagem = parseFloat(document.getElementById('embalagem').value) || 0;
+            const mensagem = document.getElementById('mensagem');
+
+            // Margem usada = margem desejada (sem descontar imposto, pois imposto será tratado nas alíquotas)
+            const margem = margemDigitada;
+
+            if (!tabela) {
+                mensagem.innerHTML = '<div class="error">Cole uma tabela com produtos!</div>';
+                return;
+            }
+
+            try {
+                const linhas = tabela.split('\n').filter(l => l.trim());
+                produtosProcessados = [];
+
+                for (const linha of linhas) {
+                    const colunas = linha.split('\t');
+                    if (colunas.length < 4) continue;
+
+                    const sku = colunas[0].trim();
+                    // ===== CORREÇÃO DOS CENTAVOS - Suporte vírgula/pt-BR + precisão =====
+                    let custoRaw = (colunas[1] || '0').trim().replace(',', '.');
+                    const custo = parseFloat(custoRaw) || 0;
+                    
+                    let comissaoMLRaw = (colunas[2] || '0').trim().replace(',', '.');
+                    const comissaoML = parseFloat(comissaoMLRaw) || 0;
+                    
+                    let freteUnitRaw = (colunas[3] || '0').trim().replace(',', '.');
+                    const freteUnit = parseFloat(freteUnitRaw) || 0;
+
+                    if (!sku || custo <= 0) continue;
+
+                    const calculo = calcularPrecoML(custo, comissaoML, freteUnit, imposto, embalagem, margem);
+                    produtosProcessados.push({
+                        sku,
+                        custo: parseFloat(custo.toFixed(2)),
+                        comissaoML: parseFloat(comissaoML.toFixed(2)),
+                        freteUnit: parseFloat(freteUnit.toFixed(2)),
+                        embalagem: parseFloat(embalagem.toFixed(2)),
+                        imposto: parseFloat(imposto.toFixed(2)),
+                        ...calculo
+                    });
+                }
+
+                if (produtosProcessados.length === 0) {
+                    mensagem.innerHTML = '<div class="error">Nenhum produto válido encontrado!</div>';
+                    return;
+                }
+
+                // Atualizar preview
+                const tableBody = document.getElementById('table-body');
+                tableBody.innerHTML = '';
+
+                let totalPreco = 0;
+                for (const produto of produtosProcessados) {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${produto.sku}</td>
+                        <td>R$ ${produto.custo.toFixed(2)}</td>
+                        <td>${produto.comissaoML.toFixed(2)}%</td>
+                        <td>R$ ${produto.freteUnit.toFixed(2)}</td>
+                        <td>R$ ${produto.embalagem.toFixed(2)}</td>
+                        <td>R$ ${produto.taxaFixa.toFixed(2)}</td>
+                        <td>R$ ${produto.impostoValor.toFixed(2)}</td>
+                        <td><strong>R$ ${produto.preco.toFixed(2)}</strong></td>
+                        <td>R$ ${produto.taxasTotal.toFixed(2)}</td>
+                        <td style="color: #27ae60;"><strong>R$ ${produto.lucroLiquido.toFixed(2)}</strong></td>
+                        <td>${produto.margemReal.toFixed(2)}%</td>
+                    `;
+                    tableBody.appendChild(row);
+                    totalPreco += produto.preco;
+                }
+
+                document.getElementById('table-container').classList.remove('hidden');
+                document.getElementById('stats').classList.remove('hidden');
+                document.getElementById('resultado-preview').classList.remove('hidden');
+                document.getElementById('total-produtos').textContent = produtosProcessados.length;
+                document.getElementById('preco-medio').textContent = (totalPreco / produtosProcessados.length).toFixed(2);
+                mensagem.innerHTML = `<div class="success">✅ ${produtosProcessados.length} produtos processados com sucesso!</div>`;
+
+            } catch (error) {
+                mensagem.innerHTML = `<div class="error">❌ Erro ao processar: ${error.message}</div>`;
+            }
+        }
+
+        // ===== EXPORTAR PARA EXCEL =====
+        function exportarExcel() {
+            if (produtosProcessados.length === 0) {
+                alert('Nenhum produto para exportar!');
+                return;
+            }
+
+            // Criar CSV
+            let csv = 'SKU\tCusto (R$)\tComissão ML (%)\tFrete (R$)\tEmbalagem (R$)\tTaxa Fixa (R$)\tImposto (R$)\tPreço de Venda (R$)\tTotal Taxas (R$)\tLucro Líquido (R$)\tMargem Real (%)';
+
+            for (const produto of produtosProcessados) {
+                csv += `\n${produto.sku}\t${produto.custo.toFixed(2)}\t${produto.comissaoML.toFixed(2)}\t${produto.freteUnit.toFixed(2)}\t${produto.embalagem.toFixed(2)}\t${produto.taxaFixa.toFixed(2)}\t${produto.impostoValor.toFixed(2)}\t${produto.preco.toFixed(2)}\t${produto.taxasTotal.toFixed(2)}\t${produto.lucroLiquido.toFixed(2)}\t${produto.margemReal.toFixed(2)}`;
+            }
+
+            // Baixar como arquivo
+            const blob = new Blob([csv], { type: 'text/plain;charset=utf-8' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'produtos_ml_precificados.csv');
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // ===== LIMPAR CAMPOS =====
+        function limparCampos() {
+            document.getElementById('tabela').value = '';
+            document.getElementById('table-container').classList.add('hidden');
+            document.getElementById('stats').classList.add('hidden');
+            document.getElementById('resultado-preview').classList.add('hidden');
+            document.getElementById('mensagem').innerHTML = '';
+        }
+    </script>
+</body>
+</html>
